@@ -827,32 +827,50 @@
 
         // --- MAP INITIALIZATION ---
         function initMap() {
-            map = new mapboxgl.Map({
-                container: 'map',
-                style: basemapStyles['streets'], // Default
-                center: [111.8998, -7.5500], 
-                zoom: 9, 
-                antialias: true
-            });
+    map = new mapboxgl.Map({
+        container: 'map',
+        style: basemapStyles['streets'], // Default
+        center: [111.8998, -7.5500],
+        zoom: 9,
+        antialias: true
+    });
 
-            map.on('load', function() {
+    // --- TAMBAHAN: GEOLOCATION CONTROL (LOKASI SAYA) ---
+    map.addControl(
+        new mapboxgl.GeolocateControl({
+            positionOptions: {
+                enableHighAccuracy: true // Menggunakan GPS HP (jika ada) agar lebih akurat
+            },
+            // Saat aktif, peta akan terus mengikuti pergerakan user
+            trackUserLocation: true,
+            // Menampilkan arah hadap user (seperti kompas)
+            showUserHeading: true
+        }),
+        'top-right' // Posisi tombol di pojok kanan atas
+    );
+
+    // --- TAMBAHAN: ZOOM CONTROL (+/-) ---
+    // (Opsional: Agar ada tombol zoom in/out manual di bawah tombol lokasi)
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    map.on('load', function() {
+        setupMapLayers();
+        loadInitialData();
+    });
+
+    // Re-add layers when style changes (Basemap switching)
+    map.on('style.load', function() {
+        if (map.isStyleLoaded()) {
+            setupMapLayers();
+            updateMapData();
+        } else {
+            map.once('style.load', () => {
                 setupMapLayers();
-                loadInitialData();
-            });
-
-            // Re-add layers when style changes (Basemap switching)
-            map.on('style.load', function() {
-                if (map.isStyleLoaded()) {
-                    setupMapLayers();
-                    updateMapData(); 
-                } else {
-                    map.once('style.load', () => {
-                        setupMapLayers();
-                        updateMapData();
-                    });
-                }
+                updateMapData();
             });
         }
+    });
+}
 
         // --- UPDATED: SETUP MAP LAYERS FUNCTION ---
         function setupMapLayers() {
@@ -1628,4 +1646,5 @@
         initMap();
     </script>
 </body>
+
 </html>
