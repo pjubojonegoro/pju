@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Peta Lampu dan Panel</title>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/mapbox-gl/3.11.0/mapbox-gl.min.js'></script>
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/mapbox-gl/3.11.0/mapbox-gl.min.css' rel='stylesheet' />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    
+    <script src="https://pjubojonegoro.github.io/petajalan/data/batasdesa.js"></script>
+
+    <style>
+        /* --- CSS SAMA SEPERTI SEBELUMNYA (TIDAK BERUBAH) --- */
+        .layer-section { padding: 15px 20px; background: #233342; border-bottom: 1px solid #4a5f7a; }
+        .layer-title { font-weight: 600; font-size: 13px; color: #ecf0f1; margin-bottom: 10px; display: block; }
+        .basemap-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .basemap-btn { background: #34495e; border: 1px solid #4a5f7a; color: #bdc3c7; padding: 8px; border-radius: 4px; font-size: 11px; cursor: pointer; text-align: center; transition: all 0.3s; }
+        .basemap-btn:hover { background: #3d566e; color: white; }
+        .basemap-btn.active { background: #3498db; color: white; border-color: #2980b9; }
+        .style-section { padding: 15px 20px; background: #233342; border-top: 1px solid #4a5f7a; border-bottom: 1px solid #4a5f7a; }
+        .style-title { font-weight: 600; font-size: 13px; color: #ecf0f1; margin-bottom: 10px; display: block; }
+        .style-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; background: #34495e; padding: 8px; border-radius: 6px; border: 1px solid #4a5f7a; }
+        .style-label { font-size: 12px; color: white; width: 50px; }
+        .color-input { border: none; width: 30px; height: 30px; cursor: pointer; background: none; padding: 0; }
+        .range-input { width: 100px; cursor: pointer; }
+        .range-value { font-size: 11px; color: #bdc3c7; width: 25px; text-align: right; }
+        .marker-label { position: absolute; background: rgba(44, 62, 80, 0.9); color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; white-space: nowrap; pointer-events: none; transform: translate(-50%, -100%); margin-top: -8px; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
+        .select2-container { width: 100% !important; }
+        .select2-container--default .select2-selection--single { background: #34495e; border: 1px solid #4a5f7a; border-radius: 6px; height: 42px; padding: 8px; color: white; }
+        .select2-container--default .select2-selection--single .select2-selection__rendered { color: white; line-height: 24px; padding-left: 0; }
+        .select2-container--default .select2-selection--single .select2-selection__arrow { height: 40px; right: 5px; }
+        .select2-container--default .select2-selection--single .select2-selection__arrow b { border-color: white transparent transparent transparent; }
+        .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b { border-color: transparent transparent white transparent; }
+        .select2-dropdown { background: #2c3e50; border: 1px solid #4a5f7a; border-radius: 6px; }
+        .select2-container--default .select2-results__option { background: #2c3e50; color: white; padding: 8px; }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] { background: #3498db !important; color: white; }
+        .select2-container--default .select2-results__option[aria-selected=true] { background: #34495e; }
+        .select2-container--default .select2-search--dropdown .select2-search__field { background: #34495e; border: 1px solid #4a5f7a; border-radius: 4px; color: white; padding: 8px; }
+        .select2-container--default .select2-search--dropdown .select2-search__field:focus { outline: none; border-color: #3498db; }
+        .select2-results__message { color: #95a5a6; }
+        .select2-container--default .select2-selection--single .select2-selection__placeholder { color: #95a5a6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f6fa; overflow: hidden; }
+        .admin-container { display: flex; height: 100vh; }
+        .sidebar { width: 350px; background: #2c3e50; color: white; overflow-y: auto; border-right: 3px solid #34495e; display: flex; flex-direction: column; }
+        .header { padding: 20px; background: #34495e; border-bottom: 1px solid #4a5f7a; }
+        .header h1 { font-size: 18px; margin-bottom: 5px; }
+        .header p { font-size: 12px; opacity: 0.8; }
+        .filter-section { padding: 20px; }
+        .filter-group { margin-bottom: 20px; }
+        .filter-label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #ecf0f1; }
+        .filter-control { width: 100%; padding: 10px; border: 1px solid #4a5f7a; border-radius: 6px; background: #34495e; color: white; font-size: 13px; }
+        .filter-control:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2); }
+        .checkbox-group { display: flex; gap: 15px; margin-top: 8px; }
+        .checkbox-item { display: flex; align-items: center; gap: 6px; }
+        .checkbox-item input[type="checkbox"] { width: 16px; height: 16px; }
+        .stats { background: #34495e; margin: 20px; padding: 15px; border-radius: 8px; border-left: 4px solid #3498db; }
+        .stats h3 { font-size: 14px; margin-bottom: 10px; color: #ecf0f1; }
+        .stat-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+        .stat-value { font-weight: bold; color: #3498db; }
+        .file-upload-container { padding: 20px; border-top: 1px solid #4a5f7a; background: #233342; }
+        .upload-btn-label { display: block; width: 100%; padding: 10px; background: #27ae60; color: white; border-radius: 6px; text-align: center; cursor: pointer; font-size: 13px; transition: background 0.3s; margin-bottom: 15px; }
+        .upload-btn-label:hover { background: #229954; }
+        .upload-btn-label i { margin-right: 5px; }
+        .file-list { margin-top: 10px; }
+        .file-item { display: flex; align-items: center; justify-content: space-between; background: #34495e; padding: 8px 10px; border-radius: 4px; margin-bottom: 5px; border: 1px solid #4a5f7a; }
+        .file-info { display: flex; align-items: center; gap: 8px; font-size: 12px; overflow: hidden; }
+        .file-icon { font-size: 14px; }
+        .file-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+        .file-type-badge { font-size: 9px; padding: 2px 4px; border-radius: 3px; }
+        .badge-panel { background: #3498db; color: white; }
+        .badge-lampu { background: #f39c12; color: white; }
+        .file-actions { display: flex; align-items: center; gap: 5px; }
+        .toggle-switch { position: relative; display: inline-block; width: 30px; height: 16px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #7f8c8d; transition: .4s; border-radius: 16px; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #2ecc71; }
+        input:checked + .slider:before { transform: translateX(14px); }
+        .map-container { flex: 1; position: relative; }
+        #map { width: 100%; height: 100%; }
+        .mapboxgl-popup-content { padding: 15px; max-width: 500px; min-width: 500px; }
+        .popup-container { display: flex; gap: 5px; flex-direction: row-reverse; }
+        .popup-left { flex: 1; min-width: 200px; }
+        .popup-right { flex: 0 0 200px; display: flex; flex-direction: column; }
+        .popup-title { font-weight: bold; margin-bottom: 10px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; grid-column: 1 / -1; }
+        .popup-item { margin-bottom: 6px; font-size: 13px; }
+        .popup-label { font-weight: 600; color: #34495e; }
+        .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 20px; border-radius: 8px; z-index: 1000; }
+        .legend { position: absolute; top: 10px; right: 10px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); z-index: 1; }
+        .legend-title { font-weight: bold; margin-bottom: 10px; font-size: 14px; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; font-size: 12px; }
+        .legend-color { width: 16px; height: 16px; border-radius: 50%; margin-right: 8px; }
+        .clear-filters { width: 100%; padding: 10px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; margin-top: 15px; }
+        .clear-filters:hover { background: #c0392b; }
+        .edit-controls { margin-top: 15px; padding-top: 15px; border-top: 2px solid #34495e; }
+        .edit-mode-btn { width: 100%; padding: 12px; background: #9b59b6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; margin-bottom: 10px; transition: background 0.3s; }
+        .edit-mode-btn:hover { background: #8e44ad; }
+        .edit-mode-btn.active { background: #e67e22; }
+        .download-csv-btn { width: 100%; padding: 12px; background: #16a085; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; margin-bottom: 10px; transition: background 0.3s; }
+        .download-csv-btn:hover { background: #138d75; }
+        .edit-instruction { background: #fff3cd; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 11px; color: #856404; border-left: 4px solid #ffc107; display: none; }
+        .edit-form-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 9999; display: none; }
+        .edit-form-overlay.show { display: block; }
+        .edit-form { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); z-index: 10000; max-width: 500px; max-height: 80vh; overflow-y: auto; display: none; }
+        .edit-form.show { display: block; }
+        .edit-form-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .form-group { margin-bottom: 12px; }
+        .form-label { display: block; margin-bottom: 5px; font-weight: 600; color: #34495e; font-size: 12px; }
+        .form-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+        .form-input:focus { outline: none; border-color: #3498db; }
+        .form-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-save, .btn-cancel, .btn-delete { flex: 1; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .btn-save { background: #27ae60; color: white; }
+        .btn-save:hover { background: #229954; }
+        .btn-cancel { background: #95a5a6; color: white; }
+        .btn-cancel:hover { background: #7f8c8d; }
+        .btn-delete { background: #e74c3c; color: white; }
+        .btn-delete:hover { background: #c0392b; }
+        .popup-photo { width: 100%; border-radius: 4px; margin-bottom: 10px; }
+        .popup-photo img { width: 100%; height: 250px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid #ddd; }
+        .popup-photo img:hover { opacity: 0.9; border-color: #3498db; }
+        .popup-no-photo { width: 100%; height: 250px; background: #ecf0f1; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: #7f8c8d; font-size: 14px; text-align: center; }
+        .photo-error { width: 100%; height: 250px; background: #ffe5e5; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 4px; color: #e74c3c; font-size: 12px; border: 1px dashed #e74c3c; text-align: center; padding: 10px; }
+        .popup-footer { margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; }
+        .popup-footer a { display: inline-block; padding: 8px 12px; background: #4285f4; color: white; text-decoration: none; border-radius: 4px; font-size: 12px; }
+        .popup-footer a:hover { background: #357ae8; }
+        .photo-modal { display: none; position: fixed; z-index: 10001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); }
+        .photo-modal.show { display: block; }
+        .photo-modal-content { margin: auto; display: block; max-width: 90%; max-height: 90%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .photo-modal-close { position: absolute; top: 15px; right: 35px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer; }
+        .photo-modal-close:hover, .photo-modal-close:focus { color: #bbb; text-decoration: none; cursor: pointer; }
+    </style>
+</head>
+
+<body>
+    <div class="admin-container">
+        <div class="sidebar">
+            <div class="header">
+                <h1>🗺️ Admin Panel Peta</h1>
+                <p>Sistem Monitoring Lampu & Panel</p>
+            </div>
+
+            <div class="file-upload-container">
+                <label for="csvFileInput" class="upload-btn-label">
+                    <i>📁</i> Upload File CSV
+                </label>
+                <input type="file" id="csvFileInput" accept=".csv" multiple style="display: none;" onchange="handleFileUpload(this)">
+                
+                <div style="font-size: 11px; color: #95a5a6; margin-bottom: 8px; font-weight: bold;">DAFTAR FILE:</div>
+                <div id="fileList" class="file-list">
+                    </div>
+            </div>
+
+            <div class="layer-section">
+                <label class="layer-title">🌍 Layer & Basemap</label>
+                
+                <div class="basemap-options">
+                    <div class="basemap-btn active" onclick="changeBasemap('streets', this)">Streets</div>
+                    <div class="basemap-btn" onclick="changeBasemap('satellite', this)">Satellite</div>
+                    <div class="basemap-btn" onclick="changeBasemap('dark', this)">Dark</div>
+                    <div class="basemap-btn" onclick="changeBasemap('light', this)">Light</div>
+                </div>
+
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="showBatasDesa" onchange="toggleBatasDesa(this.checked)">
+                        <label for="showBatasDesa" style="font-size: 12px; color:white;">Batas Desa</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-section">
+				<div class="filter-group">
+    <label class="filter-label">Kategori Aset</label>
+    <div class="checkbox-group">
+        <div class="checkbox-item">
+            <input type="checkbox" id="showPJU" checked onchange="updateMapData()">
+            <label for="showPJU">PJU (Jalan Umum)</label>
+        </div>
+        <div class="checkbox-item">
+            <input type="checkbox" id="showPJL" checked onchange="updateMapData()">
+            <label for="showPJL">PJL (Lingkungan)</label>
+        </div>
+    </div>
+</div>
+                <div class="filter-group">
+                    <label class="filter-label">Tipe Data</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="showPanel" checked>
+                            <label for="showPanel">Panel</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="showLampu" checked>
+                            <label for="showLampu">Lampu</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Kondisi APP</label>
+                    <select class="filter-control" id="kondisiApp">
+                        <option value="">Semua Kondisi</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Nama Panel</label>
+                    <select class="filter-control" id="namaPanel">
+                        <option value="">Semua Panel</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Desa/Kelurahan</label>
+                    <select class="filter-control" id="desa">
+                        <option value="">Semua Desa/Kelurahan</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Kecamatan</label>
+                    <select class="filter-control" id="kecamatan">
+                        <option value="">Semua Kecamatan</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Jenis Lampu</label>
+                    <select class="filter-control" id="jenisLampu">
+                        <option value="">Semua Jenis</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Kondisi Lampu</label>
+                    <select class="filter-control" id="kondisiLampu">
+                        <option value="">Semua Kondisi</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Kondisi Tiang</label>
+                    <select class="filter-control" id="kondisiTiang">
+                        <option value="">Semua Kondisi</option>
+                    </select>
+                </div>
+
+                <button class="clear-filters" onclick="clearAllFilters()">
+                    🗑️ Bersihkan Filter
+                </button>
+            </div>
+            
+            <div class="style-section">
+                <label class="style-title">🎨 Tampilan Marker</label>
+                
+                <div class="style-row">
+                    <span class="style-label">Panel</span>
+                    <input type="color" class="color-input" id="panelColor" value="#3498db" onchange="updateMarkerStyle('panel', 'color', this.value)">
+                    <input type="range" class="range-input" id="panelSize" min="2" max="20" value="6" oninput="updateMarkerStyle('panel', 'size', this.value)">
+                    <span class="range-value" id="panelSizeVal">6</span>
+                </div>
+
+                <div class="style-row">
+                    <span class="style-label">Lampu</span>
+                    <input type="color" class="color-input" id="lampuColor" value="#f39c12" onchange="updateMarkerStyle('lampu', 'color', this.value)">
+                    <input type="range" class="range-input" id="lampuSize" min="2" max="20" value="4" oninput="updateMarkerStyle('lampu', 'size', this.value)">
+                    <span class="range-value" id="lampuSizeVal">4</span>
+                </div>
+            </div>
+
+            <div class="stats">
+                <h3>📊 Statistik Data</h3>
+                <div class="stat-item">
+                    <span>Total Panel:</span>
+                    <span class="stat-value" id="totalPanel">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Total Lampu:</span>
+                    <span class="stat-value" id="totalLampu">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Ditampilkan:</span>
+                    <span class="stat-value" id="visibleCount">0</span>
+                </div>
+                <div class="edit-controls">
+                    <button class="edit-mode-btn" id="editModeBtn" onclick="toggleEditMode()">
+                        Mode Edit
+                    </button>
+
+                    <div class="edit-instruction" id="editInstruction">
+                        <strong>Mode Edit Aktif</strong>
+                        <br> - Klik titik untuk edit properties
+                        <br> - Drag titik untuk geser posisi
+                    </div>
+
+                    <button class="download-csv-btn" onclick="downloadCSV('panel')">
+                        Download Panel CSV
+                    </button>
+
+                    <button class="download-csv-btn" onclick="downloadCSV('lampu')">
+                        Download Lampu CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="legend">
+                <div class="legend-title">Legenda</div>
+                <div class="legend-item">
+                    <div class="legend-color" id="legend-color-panel" style="background: #3498db;"></div>
+                    <span>Panel</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" id="legend-color-lampu" style="background: #f39c12;"></div>
+                    <span>Lampu</span>
+                </div>
+                <div class="legend-item" id="legend-batas-desa" style="display:none;">
+                    <div class="legend-color" style="background: linear-gradient(45deg, red, blue, green); border: 1px solid #ccc;"></div>
+                    <span>Batas Desa</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading" style="display: none;">
+        <div>Memuat data...</div>
+    </div>
+    <div class="edit-form-overlay" id="editFormOverlay" onclick="closeEditForm()"></div>
+    <div id="editForm" class="edit-form">
+        <div class="edit-form-title" id="editFormTitle">Edit Data</div>
+        <div id="editFormContent"></div>
+        <div class="form-buttons">
+            <button class="btn-save" onclick="saveEdit()">Simpan</button>
+            <button class="btn-delete" onclick="deletePoint()">Hapus</button>
+            <button class="btn-cancel" onclick="closeEditForm()">Batal</button>
+        </div>
+    </div>
+    <div id="photoModal" class="photo-modal" onclick="closePhotoModal()">
+        <span class="photo-modal-close">×</span>
+        <img class="photo-modal-content" id="modalPhoto">
+    </div>
+    <script>
+        // Mapbox Access Token
+        mapboxgl.accessToken = 'pk.eyJ1IjoiZGhhbWFyYXIiLCJhIjoiY2wzbndleGM0MGhlejNjcGV5Z2V0a2E5dyJ9.MgJI6ePjYJ6ihnHL_nOYaA';
+
+        let map;
+        let panelData = [];
+        let lampuData = [];
+        let fileRegistry = []; 
+        let editMode = false;
+        let currentEditFeature = null;
+        let currentEditType = null;
+        let currentEditIndex = null;
+        let select2Initialized = false;
+
+        // --- LAYER CONTROL CONSTANTS ---
+        const basemapStyles = {
+            'streets': 'mapbox://styles/dhamarar/clocbtfsj016901pfgucqgix6', 
+            'satellite': 'mapbox://styles/mapbox/satellite-streets-v12',
+            'dark': 'mapbox://styles/mapbox/dark-v11',
+            'light': 'mapbox://styles/mapbox/light-v11'
+        };
+
+        // --- HELPER: Random Color Generator ---
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        function toggleEditMode() {
+            editMode = !editMode;
+            const btn = document.getElementById('editModeBtn');
+            const instruction = document.getElementById('editInstruction');
+
+            if (editMode) {
+                btn.classList.add('active');
+                btn.textContent = 'Mode Edit Aktif';
+                instruction.style.display = 'block';
+                map.dragPan.disable();
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = 'Mode Edit';
+                instruction.style.display = 'none';
+                map.dragPan.enable();
+                closeEditForm();
+            }
+        };
+
+        function openEditForm(feature, type) {
+            currentEditFeature = feature;
+            currentEditType = type;
+
+            const dataArray = type === 'panel' ? panelData : lampuData;
+            const idKey = type === 'panel' ? 'ID_PELANGGAN' : 'KODE';
+            currentEditIndex = dataArray.findIndex(f => f.properties[idKey] === feature.properties[idKey]);
+
+            const form = document.getElementById('editForm');
+            const overlay = document.getElementById('editFormOverlay');
+            const title = document.getElementById('editFormTitle');
+            const content = document.getElementById('editFormContent');
+
+            title.textContent = `Edit ${type === 'panel' ? 'Panel' : 'Lampu'}`;
+
+            const props = feature.properties;
+            const coords = feature.geometry.coordinates;
+
+            let formHTML = '';
+
+            // ... (Kode Form Generator sama) ...
+             if (type === 'panel') {
+                formHTML = `
+            <div class="form-group">
+                <label class="form-label">ID Pelanggan</label>
+                <input type="text" class="form-input" data-field="ID_PELANGGAN" value="${props.ID_PELANGGAN || ''}" readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Nama Panel</label>
+                <input type="text" class="form-input" data-field="NAMA_PELANGGAN" value="${props.NAMA_PELANGGAN || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">No Meter</label>
+                <input type="text" class="form-input" data-field="NO_METER" value="${props.NO_METER || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Daya Kontrak (VA)</label>
+                <input type="number" class="form-input" data-field="DAYA_KONTRAK" value="${props.DAYA_KONTRAK || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Kondisi APP</label>
+                <select class="form-input" data-field="KONDISI_APP">
+                    <option value="Baik" ${props.KONDISI_APP === 'Baik' ? 'selected' : ''}>Baik</option>
+                    <option value="Kurang Baik" ${props.KONDISI_APP === 'Kurang Baik' ? 'selected' : ''}>Kurang Baik</option>
+                    <option value="Rusak Ringan" ${props.KONDISI_APP === 'Rusak Ringan' ? 'selected' : ''}>Rusak Ringan</option>
+                    <option value="Rusak Berat" ${props.KONDISI_APP === 'Rusak Berat' ? 'selected' : ''}>Rusak Berat</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tahun Pemasangan</label>
+                <input type="number" class="form-input" data-field="TH_PEMASANGAN" value="${props.TH_PEMASANGAN || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Jumlah Lampu Terpasang</label>
+                <input type="number" class="form-input" data-field="JML_LAMPU_TERPASANG" value="${props.JML_LAMPU_TERPASANG || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Total Daya Lampu (VA)</label>
+                <input type="number" class="form-input" data-field="TOTAL_DAYA_LAMPU" value="${props.TOTAL_DAYA_LAMPU || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Alamat</label>
+                <input type="text" class="form-input" data-field="ALAMAT" value="${props.ALAMAT || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Desa/Kelurahan</label>
+                <input type="text" class="form-input" data-field="DESA_KEL" value="${props.DESA_KEL || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Kecamatan</label>
+                <input type="text" class="form-input" data-field="KECAMATAN" value="${props.KECAMATAN || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Kabupaten</label>
+                <input type="text" class="form-input" data-field="KABUPATEN" value="${props.KABUPATEN || ''}">
+            </div>
+			<div class="form-group">
+    <label class="form-label">Nama File Foto (contoh: panel001.jpg)</label>
+    <input type="text" class="form-input" data-field="FOTO" value="${props.FOTO || ''}" placeholder="nama_file.jpg">
+    ${props.FOTO ? `<img src="photos/${props.FOTO}" style="width: 100%; max-height: 150px; object-fit: cover; margin-top: 5px; border-radius: 4px;" onerror="this.style.display='none'">` : ''}
+</div>
+            <div class="form-group">
+                <label class="form-label">Latitude</label>
+                <input type="number" step="0.000001" class="form-input" data-field="LATITUDE" value="${coords[1]}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Longitude</label>
+                <input type="number" step="0.000001" class="form-input" data-field="LONGITUDE" value="${coords[0]}">
+            </div>
+        `;
+            } else {
+                formHTML = `
+            <div class="form-group">
+                <label class="form-label">Panel</label>
+                <input type="text" class="form-input" data-field="PANEL" value="${props.PANEL || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Kode</label>
+                <input type="text" class="form-input" data-field="KODE" value="${props.KODE || ''}" readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Jenis Lampu</label>
+                <input type="text" class="form-input" data-field="JENIS_LAMPU" value="${props.JENIS_LAMPU || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Kondisi Lampu</label>
+                <select class="form-input" data-field="KONDISI_LAMPU">
+                    <option value="BAIK" ${props.KONDISI_LAMPU === 'BAIK' ? 'selected' : ''}>BAIK</option>
+                    <option value="RUSAK RINGAN" ${props.KONDISI_LAMPU === 'RUSAK RINGAN' ? 'selected' : ''}>RUSAK RINGAN</option>
+                    <option value="RUSAK BERAT" ${props.KONDISI_LAMPU === 'RUSAK BERAT' ? 'selected' : ''}>RUSAK BERAT</option>
+                    <option value="MATI" ${props.KONDISI_LAMPU === 'MATI' ? 'selected' : ''}>MATI</option>
+                    <option value="REDUP" ${props.KONDISI_LAMPU === 'REDUP' ? 'selected' : ''}>REDUP</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tiang</label>
+                <input type="text" class="form-input" data-field="TIANG" value="${props.TIANG || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Kondisi Tiang</label>
+                <select class="form-input" data-field="KONDISI_TIANG">
+                    <option value="BAIK" ${props.KONDISI_TIANG === 'BAIK' ? 'selected' : ''}>BAIK</option>
+                    <option value="RUSAK RINGAN" ${props.KONDISI_TIANG === 'RUSAK RINGAN' ? 'selected' : ''}>RUSAK RINGAN</option>
+                    <option value="RUSAK BERAT" ${props.KONDISI_TIANG === 'RUSAK BERAT' ? 'selected' : ''}>RUSAK BERAT</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Daya (VA)</label>
+                <input type="number" class="form-input" data-field="DAYA" value="${props.DAYA || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tanggal Pasang</label>
+                <input type="date" class="form-input" data-field="TANGGAL_PASANG" value="${props.TANGGAL_PASANG || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Desa/Kelurahan</label>
+                <input type="text" class="form-input" data-field="DESA_KEL" value="${props.DESA_KEL || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Kecamatan</label>
+                <input type="text" class="form-input" data-field="KECAMATAN" value="${props.KECAMATAN || ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Kabupaten</label>
+                <input type="text" class="form-input" data-field="KABUPATEN" value="${props.KABUPATEN || ''}">
+            </div>
+			<div class="form-group">
+    <label class="form-label">Nama File Foto (contoh: lampu001.jpg)</label>
+    <input type="text" class="form-input" data-field="FOTO" value="${props.FOTO || ''}" placeholder="nama_file.jpg">
+    ${props.FOTO ? `<img src="photos/${props.FOTO}" style="width: 100%; max-height: 150px; object-fit: cover; margin-top: 5px; border-radius: 4px;" onerror="this.style.display='none'">` : ''}
+</div>
+            <div class="form-group">
+                <label class="form-label">Latitude</label>
+                <input type="number" step="0.000001" class="form-input" data-field="LATITUDE" value="${coords[1]}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Longitude</label>
+                <input type="number" step="0.000001" class="form-input" data-field="LONGITUDE" value="${coords[0]}">
+            </div>
+        `;
+            }
+
+            content.innerHTML = formHTML;
+            form.classList.add('show');
+            overlay.classList.add('show');
+        }
+
+        function closeEditForm() {
+            document.getElementById('editForm').classList.remove('show');
+            document.getElementById('editFormOverlay').classList.remove('show');
+            currentEditFeature = null;
+            currentEditType = null;
+            currentEditIndex = null;
+        }
+
+        function saveEdit() {
+            if (currentEditIndex === -1) return;
+
+            const dataArray = currentEditType === 'panel' ? panelData : lampuData;
+            const inputs = document.querySelectorAll('#editFormContent .form-input');
+
+            inputs.forEach(input => {
+                const field = input.getAttribute('data-field');
+                if (field === 'LATITUDE') {
+                    dataArray[currentEditIndex].geometry.coordinates[1] = parseFloat(input.value);
+                    dataArray[currentEditIndex].properties[field] = input.value;
+                } else if (field === 'LONGITUDE') {
+                    dataArray[currentEditIndex].geometry.coordinates[0] = parseFloat(input.value);
+                    dataArray[currentEditIndex].properties[field] = input.value;
+                } else {
+                    dataArray[currentEditIndex].properties[field] = input.value;
+                }
+            });
+
+            updateMapData();
+            populateFilters();
+            alert('Data berhasil diupdate!');
+            closeEditForm();
+        }
+
+        function deletePoint() {
+            if (currentEditIndex === -1) return;
+
+            if (!confirm('Yakin ingin menghapus data ini?')) return;
+
+            const dataArray = currentEditType === 'panel' ? panelData : lampuData;
+            dataArray.splice(currentEditIndex, 1);
+
+            if (currentEditType === 'panel') {
+                panelData = dataArray;
+            } else {
+                lampuData = dataArray;
+            }
+
+            updateMapData();
+            populateFilters();
+            alert('Data berhasil dihapus!');
+            closeEditForm();
+        }
+
+        function downloadCSV(type) {
+            const dataArray = type === 'panel' ? panelData : lampuData;
+
+            if (dataArray.length === 0) {
+                alert('Tidak ada data untuk didownload');
+                return;
+            }
+            const firstItem = dataArray[0].properties;
+            const headers = Object.keys(firstItem).filter(key => key !== 'type' && key !== 'fileId');
+
+            let csvContent = headers.join(',') + '\n';
+
+            dataArray.forEach(feature => {
+                const row = headers.map(header => {
+                    let value = feature.properties[header] || '';
+                    if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                        value = '"' + value.replace(/"/g, '""') + '"';
+                    }
+                    return value;
+                });
+                csvContent += row.join(',') + '\n';
+            });
+
+            const blob = new Blob([csvContent], {
+                type: 'text/csv;charset=utf-8;'
+            });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${type}_data_edited_${new Date().getTime()}.csv`);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            alert(`File ${type}_data_edited.csv berhasil didownload!`);
+        }
+        
+        function updateMarkerStyle(type, property, value) {
+            if (!map) return;
+            
+            const layerId = type === 'panel' ? 'panel-layer' : 'lampu-layer';
+            const labelLayerId = type === 'panel' ? 'panel-label' : 'lampu-label';
+            
+            if (property === 'color') {
+                if (map.getLayer(layerId)) {
+                    map.setPaintProperty(layerId, 'circle-color', value);
+                }
+                if (map.getLayer(labelLayerId)) {
+                    map.setPaintProperty(labelLayerId, 'text-halo-color', value);
+                }
+                const legendId = type === 'panel' ? 'legend-color-panel' : 'legend-color-lampu';
+                const legendEl = document.getElementById(legendId);
+                if (legendEl) {
+                    legendEl.style.background = value;
+                }
+                
+            } else if (property === 'size') {
+                const radius = parseFloat(value);
+                if (map.getLayer(layerId)) {
+                    map.setPaintProperty(layerId, 'circle-radius', radius);
+                }
+                const valId = type === 'panel' ? 'panelSizeVal' : 'lampuSizeVal';
+                const valEl = document.getElementById(valId);
+                if (valEl) {
+                    valEl.textContent = value;
+                }
+            }
+        }
+
+
+        // --- MAP INITIALIZATION ---
+        function initMap() {
+            map = new mapboxgl.Map({
+                container: 'map',
+                style: basemapStyles['streets'], // Default
+                center: [111.8998, -7.5500], 
+                zoom: 9, 
+                antialias: true
+            });
+
+            map.on('load', function() {
+                setupMapLayers();
+                loadInitialData();
+            });
+
+            // Re-add layers when style changes (Basemap switching)
+            map.on('style.load', function() {
+                if (map.isStyleLoaded()) {
+                    setupMapLayers();
+                    updateMapData(); 
+                } else {
+                    map.once('style.load', () => {
+                        setupMapLayers();
+                        updateMapData();
+                    });
+                }
+            });
+        }
+
+        // --- UPDATED: SETUP MAP LAYERS FUNCTION ---
+        function setupMapLayers() {
+            // 1. Add Sources
+            if (!map.getSource('panel-source')) {
+                map.addSource('panel-source', {
+                    'type': 'geojson',
+                    'data': { 'type': 'FeatureCollection', 'features': [] }
+                });
+            }
+            if (!map.getSource('lampu-source')) {
+                map.addSource('lampu-source', {
+                    'type': 'geojson',
+                    'data': { 'type': 'FeatureCollection', 'features': [] }
+                });
+            }
+            
+            // 2. Setup Batas Desa Source & Pre-calculate Random Colors
+            if (!map.getSource('batas-desa-source')) {
+                let dataBatas = { type: 'FeatureCollection', features: [] };
+                if (typeof batasdesa !== 'undefined') dataBatas = batasdesa;
+                else if (typeof batasDesa !== 'undefined') dataBatas = batasDesa;
+
+                // PRE-PROCESS: Add random color to features only ONCE
+                if (dataBatas.features && !dataBatas.processedColors) {
+                    dataBatas.features.forEach(f => {
+                        f.properties.randomColor = getRandomColor();
+                    });
+                    dataBatas.processedColors = true; // Flag to prevent re-coloring
+                }
+
+                map.addSource('batas-desa-source', {
+                    'type': 'geojson',
+                    'data': dataBatas
+                });
+            }
+
+            // 3. Batas Desa Layers (Fill, Line, Label)
+            const showBatas = document.getElementById('showBatasDesa').checked ? 'visible' : 'none';
+
+            // Fill Layer (Warna Acak)
+            if (!map.getLayer('batas-desa-fill')) {
+                map.addLayer({
+                    'id': 'batas-desa-fill',
+                    'type': 'fill',
+                    'source': 'batas-desa-source',
+                    'layout': { 'visibility': showBatas },
+                    'paint': {
+                        'fill-color': ['get', 'randomColor'], // Gunakan warna acak
+                        'fill-opacity': 0.3
+                    }
+                });
+            }
+
+            // Line Layer
+            if (!map.getLayer('batas-desa-line')) {
+                map.addLayer({
+                    'id': 'batas-desa-line',
+                    'type': 'line',
+                    'source': 'batas-desa-source',
+                    'layout': { 'visibility': showBatas },
+                    'paint': {
+                        'line-color': '#000',
+                        'line-width': 1,
+                        'line-opacity': 0.5
+                    }
+                });
+            }
+
+            // Label Layer (Baru)
+            if (!map.getLayer('batas-desa-label')) {
+                map.addLayer({
+                    'id': 'batas-desa-label',
+                    'type': 'symbol',
+                    'source': 'batas-desa-source',
+                    'layout': {
+                        'visibility': showBatas,
+                        'text-field': ['get', 'NAME_4'], // Mengambil nama desa
+                        'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                        'text-size': 11,
+                        'text-anchor': 'center',
+                        'text-max-width': 8
+                    },
+                    'paint': {
+                        'text-color': '#000000',
+                        'text-halo-color': '#ffffff',
+                        'text-halo-width': 2
+                    }
+                });
+            }
+
+            // 4. Add Point Layers (existing logic)
+            const lampuColor = document.getElementById('lampuColor').value;
+            const lampuSize = parseFloat(document.getElementById('lampuSize').value);
+            const panelColor = document.getElementById('panelColor').value;
+            const panelSize = parseFloat(document.getElementById('panelSize').value);
+
+            if (!map.getLayer('lampu-layer')) {
+                map.addLayer({
+                    'id': 'lampu-layer',
+                    'type': 'circle',
+                    'source': 'lampu-source',
+                    'paint': {
+                        'circle-radius': lampuSize,
+                        'circle-color': lampuColor,
+                        'circle-stroke-width': 1,
+                        'circle-stroke-color': '#ffffff'
+                    }
+                });
+            }
+
+            if (!map.getLayer('lampu-label')) {
+                map.addLayer({
+                    'id': 'lampu-label',
+                    'type': 'symbol',
+                    'source': 'lampu-source',
+                    'minzoom': 17,
+                    'layout': {
+                        'text-field': ['get', 'KODE'],
+                        'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                        'text-size': 10,
+                        'text-offset': [0, -1.2],
+                        'text-anchor': 'bottom'
+                    },
+                    'paint': {
+                        'text-color': '#ffffff',
+                        'text-halo-color': lampuColor,
+                        'text-halo-width': 2
+                    }
+                });
+            }
+
+            if (!map.getLayer('panel-layer')) {
+                map.addLayer({
+                    'id': 'panel-layer',
+                    'type': 'circle',
+                    'source': 'panel-source',
+                    'paint': {
+                        'circle-radius': panelSize,
+                        'circle-color': panelColor,
+                        'circle-stroke-width': 2,
+                        'circle-stroke-color': '#ffffff'
+                    }
+                });
+            }
+
+            if (!map.getLayer('panel-label')) {
+                map.addLayer({
+                    'id': 'panel-label',
+                    'type': 'symbol',
+                    'source': 'panel-source',
+                    'minzoom': 16,
+                    'layout': {
+                        'text-field': ['get', 'NAMA_PELANGGAN'],
+                        'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                        'text-size': 11,
+                        'text-offset': [0, -1.5],
+                        'text-anchor': 'bottom'
+                    },
+                    'paint': {
+                        'text-color': '#ffffff',
+                        'text-halo-color': panelColor,
+                        'text-halo-width': 2
+                    }
+                });
+            }
+
+            bindMapInteractions();
+        }
+
+        // --- UPDATED: Toggle Batas Desa Function ---
+        function toggleBatasDesa(isVisible) {
+            const visibility = isVisible ? 'visible' : 'none';
+            
+            // Toggle Fill
+            if (map.getLayer('batas-desa-fill')) {
+                map.setLayoutProperty('batas-desa-fill', 'visibility', visibility);
+            }
+            // Toggle Line
+            if (map.getLayer('batas-desa-line')) {
+                map.setLayoutProperty('batas-desa-line', 'visibility', visibility);
+            }
+            // Toggle Label
+            if (map.getLayer('batas-desa-label')) {
+                map.setLayoutProperty('batas-desa-label', 'visibility', visibility);
+            }
+            
+            // Show/Hide legend item
+            const legendItem = document.getElementById('legend-batas-desa');
+            legendItem.style.display = isVisible ? 'flex' : 'none';
+
+            // Fit bounds if visible and data exists
+            if (isVisible) {
+                const source = map.getSource('batas-desa-source');
+                if (source && source._data && source._data.features && source._data.features.length > 0) {
+                     const bounds = new mapboxgl.LngLatBounds();
+                     source._data.features.forEach(function(feature) {
+                         if(feature.geometry.type === 'Polygon') {
+                             feature.geometry.coordinates[0].forEach(coord => {
+                                 bounds.extend(coord);
+                             });
+                         } else if (feature.geometry.type === 'MultiPolygon') {
+                             feature.geometry.coordinates.forEach(poly => {
+                                 poly[0].forEach(coord => {
+                                     bounds.extend(coord);
+                                 });
+                             });
+                         }
+                     });
+                     // Optional: map.fitBounds(bounds, { padding: 50 });
+                }
+            }
+        }
+
+        function changeBasemap(styleName, element) {
+            document.querySelectorAll('.basemap-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            const styleUrl = basemapStyles[styleName];
+            map.setStyle(styleUrl);
+        }
+
+        function bindMapInteractions() {
+             // Add click events
+             map.on('click', 'panel-layer', (e) => {
+                if (editMode) {
+                    openEditForm(e.features[0], 'panel');
+                } else {
+                    showPanelPopup(e);
+                }
+            });
+
+            map.on('click', 'lampu-layer', (e) => {
+                if (editMode) {
+                    openEditForm(e.features[0], 'lampu');
+                } else {
+                    showLampuPopup(e);
+                }
+            });
+            // Drag functionality
+            map.on('mouseenter', 'panel-layer', () => {
+                if (editMode) map.getCanvas().style.cursor = 'move';
+                else map.getCanvas().style.cursor = 'pointer';
+            });
+
+            map.on('mouseleave', 'panel-layer', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+            map.on('mouseenter', 'lampu-layer', () => {
+                if (editMode) map.getCanvas().style.cursor = 'move';
+                else map.getCanvas().style.cursor = 'pointer';
+            });
+
+            map.on('mouseleave', 'lampu-layer', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+            let isDragging = false;
+            let dragFeature = null;
+
+            map.on('mousedown', 'panel-layer', (e) => {
+                if (!editMode) return;
+                e.preventDefault();
+                isDragging = true;
+                dragFeature = {
+                    feature: e.features[0],
+                    type: 'panel'
+                };
+                map.getCanvas().style.cursor = 'grabbing';
+            });
+
+            map.on('mousedown', 'lampu-layer', (e) => {
+                if (!editMode) return;
+                e.preventDefault();
+                isDragging = true;
+                dragFeature = {
+                    feature: e.features[0],
+                    type: 'lampu'
+                };
+                map.getCanvas().style.cursor = 'grabbing';
+            });
+
+            map.on('mousemove', (e) => {
+                if (!isDragging || !dragFeature) return;
+
+                const coords = [e.lngLat.lng, e.lngLat.lat];
+                const dataArray = dragFeature.type === 'panel' ? panelData : lampuData;
+                const idKey = dragFeature.type === 'panel' ? 'ID_PELANGGAN' : 'KODE';
+                const featureId = dragFeature.feature.properties[idKey];
+
+                const index = dataArray.findIndex(f => f.properties[idKey] === featureId);
+                if (index !== -1) {
+                    dataArray[index].geometry.coordinates = coords;
+                    dataArray[index].properties.LATITUDE = coords[1].toFixed(6);
+                    dataArray[index].properties.LONGITUDE = coords[0].toFixed(6);
+                    updateMapData();
+                }
+            });
+
+            map.on('mouseup', () => {
+                isDragging = false;
+                dragFeature = null;
+                if (editMode) map.getCanvas().style.cursor = 'move';
+            });
+        }
+        
+        async function handleFileUpload(input) {
+            const files = Array.from(input.files);
+            if (files.length === 0) return;
+
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                for (const file of files) {
+                    await processUploadedFile(file);
+                }
+                
+                input.value = '';
+                
+                populateFilters();
+                updateMapData();
+
+                if (panelData.length > 0 || lampuData.length > 0) {
+                    const bounds = new mapboxgl.LngLatBounds();
+                    [...panelData, ...lampuData].forEach(feature => {
+                        bounds.extend(feature.geometry.coordinates);
+                    });
+                    map.fitBounds(bounds, { padding: 50 });
+                }
+
+            } catch (error) {
+                console.error("Upload error:", error);
+                alert('Error loading CSV files: ' + error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        function processUploadedFile(file) {
+            return new Promise((resolve, reject) => {
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        const fileId = 'file_' + new Date().getTime() + Math.random().toString(36).substr(2, 5);
+                        
+                        const headers = results.meta.fields;
+                        let isPanel = false;
+                        
+                        if (headers.includes('ID_PELANGGAN') || headers.includes('NAMA_PELANGGAN')) {
+                            isPanel = true;
+                        } else if (headers.includes('KODE') || headers.includes('PANEL')) {
+                            isPanel = false;
+                        } else {
+                            isPanel = file.name.toLowerCase().includes('panel');
+                        }
+                        
+                        const features = processCSVData(results.data, isPanel, fileId);
+                        
+                        if (features.length > 0) {
+                            if (isPanel) {
+                                panelData = [...panelData, ...features];
+                            } else {
+                                lampuData = [...lampuData, ...features];
+                            }
+                            
+                            addFileToRegistry(fileId, file.name, isPanel ? 'panel' : 'lampu', true);
+                        }
+                        
+                        resolve();
+                    },
+                    error: function(err) {
+                        reject(err);
+                    }
+                });
+            });
+        }
+        
+        function addFileToRegistry(id, name, type, visible) {
+            fileRegistry.push({
+                id: id,
+                name: name,
+                type: type,
+                visible: visible
+            });
+            
+            updateFileListUI();
+        }
+        
+        function updateFileListUI() {
+            const container = document.getElementById('fileList');
+            container.innerHTML = '';
+            
+            fileRegistry.forEach(file => {
+                const badgeClass = file.type === 'panel' ? 'badge-panel' : 'badge-lampu';
+                const badgeText = file.type === 'panel' ? 'PANEL' : 'LAMPU';
+                
+                const html = `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <span class="file-icon">📄</span>
+                            <div title="${file.name}">
+                                <div class="file-name">${file.name}</div>
+                                <span class="file-type-badge ${badgeClass}">${badgeText}</span>
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <label class="toggle-switch">
+                                <input type="checkbox" ${file.visible ? 'checked' : ''} onchange="toggleFileVisibility('${file.id}', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+        
+        function toggleFileVisibility(fileId, isVisible) {
+            const fileIndex = fileRegistry.findIndex(f => f.id === fileId);
+            if (fileIndex !== -1) {
+                fileRegistry[fileIndex].visible = isVisible;
+                updateMapData();
+            }
+        }
+
+        async function loadCSVFromFile(filename, isPanel, category) {
+    try {
+        const response = await fetch(filename);
+        if (!response.ok) throw new Error("File not found");
+        const csvText = await response.text();
+
+        return new Promise((resolve) => {
+            Papa.parse(csvText, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    // Buat ID unik untuk file registry
+                    const fileId = 'file_' + category.toLowerCase() + '_' + (isPanel ? 'panel' : 'lampu');
+                    
+                    // Kirim category ke processCSVData
+                    const features = processCSVData(results.data, isPanel, fileId, category);
+                    
+                    addFileToRegistry(fileId, filename, isPanel ? 'panel' : 'lampu', true);
+                    resolve(features);
+                }
+            });
+        });
+    } catch (error) {
+        console.warn(`File ${filename} tidak ditemukan atau error.`);
+        return [];
+    }
+}
+
+        async function loadInitialData() {
+    document.getElementById('loading').style.display = 'block';
+
+    try {
+        console.log('Memuat data PJU dan PJL...');
+        fileRegistry = [];
+        panelData = [];
+        lampuData = [];
+
+        <!-- // Load Data PJU (Kategori: PJU) -->
+        <!-- const panelPJU = await loadCSVFromFile('panel_pju.csv', true, 'PJU'); -->
+        <!-- const lampuPJU = await loadCSVFromFile('lampu_pju.csv', false, 'PJU'); -->
+
+        <!-- // Load Data PJL (Kategori: PJL) -->
+        <!-- const panelPJL = await loadCSVFromFile('panel_pjl.csv', true, 'PJL'); -->
+        <!-- const lampuPJL = await loadCSVFromFile('lampu_pjl.csv', false, 'PJL'); -->
+
+        <!-- // Gabungkan data -->
+        <!-- panelData = [...panelPJU, ...panelPJL]; -->
+        <!-- lampuData = [...lampuPJU, ...lampuPJL]; -->
+
+        populateFilters();
+        updateMapData();
+
+        if (panelData.length > 0 || lampuData.length > 0) {
+            const bounds = new mapboxgl.LngLatBounds();
+            [...panelData, ...lampuData].forEach(feature => {
+                bounds.extend(feature.geometry.coordinates);
+            });
+            map.fitBounds(bounds, { padding: 50 });
+        }
+    } catch (error) {
+        console.error('Error loading data:', error);
+        alert('Gagal memuat data CSV. Pastikan file panel_pju.csv, lampu_pju.csv, dll tersedia.');
+    } finally {
+        document.getElementById('loading').style.display = 'none';
+    }
+}
+
+        function processCSVData(data, isPanel, fileId, categoryInput = null) {
+    const features = [];
+
+    data.forEach((row) => {
+        try {
+            const lat = parseFloat(row.LATITUDE || row.latitude);
+            const lng = parseFloat(row.LONGITUDE || row.longitude);
+
+            if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
+
+            // Jika kategori tidak diinput manual, coba deteksi dari nama file (untuk upload manual)
+            let category = categoryInput;
+            if (!category) {
+                // Logika deteksi untuk file upload manual
+                if (fileId.toLowerCase().includes('pjl')) {
+                    category = 'PJL';
+                } else {
+                    category = 'PJU'; // Default ke PJU jika tidak ada nama PJL
+                }
+            }
+
+            features.push({
+                type: 'Feature',
+                properties: {
+                    ...row,
+                    type: isPanel ? 'panel' : 'lampu',
+                    fileId: fileId,
+                    KATEGORI: category // Properti baru untuk filter
+                },
+                geometry: {
+                    type: 'Point',
+                    coordinates: [lng, lat]
+                }
+            });
+        } catch (error) {
+            // Ignore error rows
+        }
+    });
+    return features;
+}
+
+        function showPanelPopup(e) {
+            if (editMode) {
+                openEditForm(e.features[0], 'panel');
+                return;
+            }
+
+            const props = e.features[0].properties;
+            const photoFilename = props.FOTO || '';
+            const photoPath = photoFilename ? `photos/${photoFilename}` : '';
+
+            const html = `
+    <div class="popup-title">📋 Detail Panel</div>
+    <div class="popup-container">
+        <div class="popup-left">
+            <div class="popup-item"><span class="popup-label">ID Pelanggan:</span> ${props.ID_PELANGGAN || '-'}</div>
+            <div class="popup-item"><span class="popup-label">Panel:</span> ${props.NAMA_PELANGGAN || '-'}</div>
+            <div class="popup-item"><span class="popup-label">No Meter:</span> ${props.NO_METER || '-'}</div>
+            <div class="popup-item"><span class="popup-label">Daya Kontrak:</span> ${props.DAYA_KONTRAK || '-'} VA</div>
+            <div class="popup-item"><span class="popup-label">Kondisi APP:</span> ${props.KONDISI_APP || '-'}</div>
+            <div class="popup-item"><span class="popup-label">Juml Lampu:</span> ${props.JML_LAMPU_TERPASANG || '-'}</div>
+            <div class="popup-item"><span class="popup-label">Total Daya:</span> ${props.TOTAL_DAYA_LAMPU || '-'} VA</div>
+            <div class="popup-item"><span class="popup-label">Desa/Kel:</span> ${props.DESA_KEL || '-'}</div>
+        </div>
+        <div class="popup-right">
+            ${photoFilename ? 
+                `<div class="popup-photo">
+                    <img src="${photoPath}" 
+                         alt="Foto Panel" 
+                         onclick="openPhotoModal('${photoPath}')"
+                         onerror="this.parentElement.innerHTML='<div class=\\'photo-error\\'>❌ Foto tidak ditemukan<br><small>${photoFilename}</small></div>'">
+                </div>` : 
+                `<div class="popup-no-photo">📷<br>Belum ada foto</div>`
+            }
+        </div>
+    </div>
+    <div class="popup-footer">
+        <a href="https://www.google.com/maps?q=&layer=c&cbll=${e.lngLat.lat},${e.lngLat.lng}" 
+           target="_blank">
+            📍 Lihat Street View
+        </a>
+    </div>
+`;
+            new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(html).addTo(map);
+        }
+
+        function showLampuPopup(e) {
+            if (editMode) {
+                openEditForm(e.features[0], 'lampu');
+                return;
+            }
+
+            const props = e.features[0].properties;
+            const photoFilename = props.FOTO || '';
+            const photoPath = photoFilename ? `photos/${photoFilename}` : '';
+
+            const html = `
+    <div class="popup-title">💡 Detail Lampu</div>
+    <div class="popup-container">
+        <div class="popup-left">
+            <div class="popup-item"><span class="popup-label">Panel:</span> ${props.PANEL || '-'}</div>
+            <div class="popup-item"><span class="popup-label">Kode:</span> ${props.KODE || '-'}</div>
+            <div class="popup-item"><span class="popup-label">Jenis Lampu:</span> ${props.JENIS_LAMPU || '-'}</div>
+            <div class="popup-item"><span class="popup-label">Kondisi Lampu:</span> ${props.KONDISI_LAMPU || '-'}</div>
+            <div class="popup-item"><span class="popup-label">Daya:</span> ${props.DAYA || '-'} VA</div>
+            <div class="popup-item"><span class="popup-label">Desa/Kel:</span> ${props.DESA_KEL || '-'}</div>
+        </div>
+        <div class="popup-right">
+            ${photoFilename ? 
+                `<div class="popup-photo">
+                    <img src="${photoPath}" 
+                         alt="Foto Lampu" 
+                         onclick="openPhotoModal('${photoPath}')"
+                         onerror="this.parentElement.innerHTML='<div class=\\'photo-error\\'>❌ Foto tidak ditemukan<br><small>${photoFilename}</small></div>'">
+                </div>` : 
+                `<div class="popup-no-photo">📷<br>Belum ada foto</div>`
+            }
+        </div>
+    </div>
+    <div class="popup-footer">
+        <a href="https://www.google.com/maps?q=&layer=c&cbll=${e.lngLat.lat},${e.lngLat.lng}" 
+           target="_blank">
+            📍 Lihat Street View
+        </a>
+    </div>
+`;
+            new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(html).addTo(map);
+        }
+
+        function updateMapData() {
+            if (!map.getSource('panel-source') || !map.getSource('lampu-source')) return;
+
+            const filteredPanel = filterData(panelData, 'panel');
+            const filteredLampu = filterData(lampuData, 'lampu');
+
+            const showPanel = document.getElementById('showPanel').checked;
+            const showLampu = document.getElementById('showLampu').checked;
+
+            map.getSource('panel-source').setData({
+                type: 'FeatureCollection',
+                features: showPanel ? filteredPanel : []
+            });
+
+            map.getSource('lampu-source').setData({
+                type: 'FeatureCollection',
+                features: showLampu ? filteredLampu : []
+            });
+
+            updateStats(filteredPanel.length, filteredLampu.length);
+        }
+
+        function filterData(data, type) {
+    return data.filter(feature => {
+        const props = feature.properties;
+        const fileInfo = fileRegistry.find(f => f.id === props.fileId);
+        
+        // 1. Filter File Registry (Toggle per file)
+        if (fileInfo && !fileInfo.visible) return false;
+
+        // 2. Filter Kategori PJU / PJL (BARU)
+        const showPJU = document.getElementById('showPJU').checked;
+        const showPJL = document.getElementById('showPJL').checked;
+
+        if (props.KATEGORI === 'PJU' && !showPJU) return false;
+        if (props.KATEGORI === 'PJL' && !showPJL) return false;
+
+        // 3. Filter Dropdown yang sudah ada
+        const kondisiApp = document.getElementById('kondisiApp').value;
+        const namaPanel = document.getElementById('namaPanel').value;
+        const desa = document.getElementById('desa').value;
+        const kecamatan = document.getElementById('kecamatan').value;
+        const jenisLampu = document.getElementById('jenisLampu').value;
+        const kondisiLampu = document.getElementById('kondisiLampu').value;
+        const kondisiTiang = document.getElementById('kondisiTiang').value;
+
+        if (kondisiApp && props.KONDISI_APP !== kondisiApp) return false;
+        if (desa && props.DESA_KEL !== desa) return false;
+        if (kecamatan && props.KECAMATAN !== kecamatan) return false;
+
+        if (type === 'panel') {
+            if (namaPanel && props.NAMA_PELANGGAN !== namaPanel) return false;
+        }
+
+        if (type === 'lampu') {
+            if (namaPanel && props.PANEL !== namaPanel) return false;
+            if (jenisLampu && props.JENIS_LAMPU !== jenisLampu) return false;
+            if (kondisiLampu && props.KONDISI_LAMPU !== kondisiLampu) return false;
+            if (kondisiTiang && props.KONDISI_TIANG !== kondisiTiang) return false;
+        }
+
+        return true;
+    });
+}
+
+        function updateStats(panelCount, lampuCount) {
+            document.getElementById('totalPanel').textContent = panelData.length;
+            document.getElementById('totalLampu').textContent = lampuData.length;
+            document.getElementById('visibleCount').textContent = panelCount + lampuCount;
+        }
+
+        function populateFilters() {
+            const allFeatures = [...panelData, ...lampuData];
+
+            populateSelect('kondisiApp', allFeatures.map(f => f.properties.KONDISI_APP));
+            
+            const panelNames = [
+                ...panelData.map(f => f.properties.NAMA_PELANGGAN),
+                ...lampuData.map(f => f.properties.PANEL)
+            ];
+            populateSelect('namaPanel', panelNames);
+
+            populateSelect('desa', allFeatures.map(f => f.properties.DESA_KEL));
+            populateSelect('kecamatan', allFeatures.map(f => f.properties.KECAMATAN));
+            populateSelect('jenisLampu', lampuData.map(f => f.properties.JENIS_LAMPU));
+            populateSelect('kondisiLampu', lampuData.map(f => f.properties.KONDISI_LAMPU));
+            populateSelect('kondisiTiang', lampuData.map(f => f.properties.KONDISI_TIANG));
+            initializeSelect2();
+        }
+
+        function initializeSelect2() {
+            if (select2Initialized) {
+                $('.filter-control').trigger('change.select2');
+                return;
+            }
+            $('.filter-control').select2({
+                theme: 'default',
+                placeholder: function() { return $(this).find('option:first').text(); },
+                allowClear: false,
+                width: '100%'
+            });
+            $('.filter-control').on('select2:select', function() { updateMapData(); });
+            select2Initialized = true;
+        }
+
+        function populateSelect(selectId, values) {
+            const select = document.getElementById(selectId);
+            const uniqueValues = [...new Set(values.filter(v => v && v !== ''))].sort();
+            while (select.options.length > 1) { select.remove(1); }
+            uniqueValues.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                select.appendChild(option);
+            });
+            if (select2Initialized && $(select).hasClass('select2-hidden-accessible')) {
+                $(select).trigger('change.select2');
+            }
+        }
+
+        function clearAllFilters() {
+            $('.filter-control').each(function() {
+                if ($(this).hasClass('select2-hidden-accessible')) {
+                    $(this).val('').trigger('change');
+                } else {
+                    this.selectedIndex = 0;
+                }
+            });
+            document.getElementById('showPanel').checked = true;
+            document.getElementById('showLampu').checked = true;
+            fileRegistry.forEach(f => f.visible = true);
+            updateFileListUI();
+            updateMapData();
+        }
+
+        function openPhotoModal(photoPath) {
+            const modal = document.getElementById('photoModal');
+            const modalImg = document.getElementById('modalPhoto');
+            modal.classList.add('show');
+            modalImg.src = photoPath;
+        }
+
+        function closePhotoModal() {
+            document.getElementById('photoModal').classList.remove('show');
+        }
+
+        document.querySelectorAll('input[type="checkbox"]').forEach(element => {
+            element.addEventListener('change', updateMapData);
+        });
+
+        initMap();
+    </script>
+</body>
+</html>
